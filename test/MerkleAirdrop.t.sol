@@ -27,7 +27,7 @@ contract MerkleAirdropTest is ZkSyncChainChecker, Test {
     function setUp() public {
         if (!isZkSyncChain()) {
             DeployMerkleAirdrop deployer = new DeployMerkleAirdrop();
-            (merkleAirdrop, token) = deployer.deployMerkleAirdrop();
+            (merkleAirdrop, token) = deployer.run();
         } else {
             token = new BFTToken();
             merkleAirdrop = new MerkleAirdrop(ROOT, token);
