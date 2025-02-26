@@ -9,9 +9,8 @@ DEFAULT_ANVIL_KEY := 0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf
 
 help:
    @echo "Usage:"
-   @echo "  make deploy CONTRACT=<ContractName> [ARGS=...]\n    example: make deploy CONTRACT=DeploySENZ ARGS=\"--network sepolia\""
-   @echo ""
-   @echo "  make fund [ARGS=...]\n    example: make deploy ARGS=\"--network sepolia\""
+   @echo "make deploy CONTRACT=<ContractName> [ARGS=...]\n    example: make deploy CONTRACT=DeploySENZ ARGS=\"--network sepolia\""
+   @echo "make fund [ARGS=...]\n    example: make deploy ARGS=\"--network sepolia\""
 
 
 all: clean remove install update build
@@ -66,9 +65,9 @@ endif
 
 
 deploy:
-   @if [ -z "$(CONTRACT)" ]; then \
-       echo "Error: CONTRACT variable not specified. Use make deploy CONTRACT=<ContractName> [ARGS=...]"; \
-       exit 1; \
+   @if [-z "$(CONTRACT)"]; then \
+      echo "Error: CONTRACT variable not specified. Use make deploy CONTRACT=<ContractName> [ARGS=...]"; \
+      exit 1; \
    else \
-       forge script script/$(CONTRACT).s.sol:$(CONTRACT) $(NETWORK_ARGS); \
+      forge script script/$(CONTRACT).s.sol:$(CONTRACT) $(NETWORK_ARGS); \
    fi

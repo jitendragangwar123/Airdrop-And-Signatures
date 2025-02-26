@@ -54,4 +54,86 @@ contract MerkleAirdropTest is ZkSyncChainChecker, Test {
         uint256 endingBal = token.balanceOf(user);
         assertEq(endingBal - startingBal, AMOUNT_TO_CLAIM);
     }
+
+    function testCannotClaimTwice() public {
+        vm.startPrank(user);
+        (uint8 v, bytes32 r, bytes32 s) = signMessage(userPrivateKey, user);
+        vm.stopPrank();
+
+        vm.prank(gasPayer);
+        merkleAirdrop.claim(user, AMOUNT_TO_CLAIM, PROOF, v, r, s);
+
+        vm.expectRevert(MerkleAirdrop.MerkleAirdrop__AlreadyClaimed.selector);
+        vm.prank(gasPayer);
+        merkleAirdrop.claim(user, AMOUNT_TO_CLAIM, PROOF, v, r, s);
+    }
+
+    function testCannotClaimWithInvalidSignature() public {
+        vm.startPrank(user);
+        (uint8 v, bytes32 r, bytes32 s) = signMessage(userPrivateKey, user);
+        vm.stopPrank();
+
+        bytes32 invalidR = bytes32(uint256(r) + 1);
+
+        vm.expectRevert(MerkleAirdrop.MerkleAirdrop__InvalidSignature.selector);
+        vm.prank(gasPayer);
+        merkleAirdrop.claim(user, AMOUNT_TO_CLAIM, PROOF, v, invalidR, s);
+    }
+
+    function testMerkleRootIsCorrect() public view {
+        assertEq(merkleAirdrop.getMerkleRoot(), ROOT);
+    }
+
+    function testCannotClaimForAnotherUser() public {
+        address anotherUser = makeAddr("AnotherUser");
+
+        vm.startPrank(user);
+        (uint8 v, bytes32 r, bytes32 s) = signMessage(userPrivateKey, user);
+        vm.stopPrank();
+
+        vm.expectRevert(MerkleAirdrop.MerkleAirdrop__InvalidSignature.selector);
+        vm.prank(gasPayer);
+        merkleAirdrop.claim(anotherUser, AMOUNT_TO_CLAIM, PROOF, v, r, s);
+    }
+
+    function testClaimEventEmitted() public {
+        vm.startPrank(user);
+        (uint8 v, bytes32 r, bytes32 s) = signMessage(userPrivateKey, user);
+        vm.stopPrank();
+
+        vm.prank(gasPayer);
+        vm.expectEmit(true, true, false, true);
+        emit MerkleAirdrop.Claimed(user, AMOUNT_TO_CLAIM);
+
+        merkleAirdrop.claim(user, AMOUNT_TO_CLAIM, PROOF, v, r, s);
+    }
+
+    function testCannotClaimZeroAmount() public {
+        vm.startPrank(user);
+        (uint8 v, bytes32 r, bytes32 s) = signMessage(userPrivateKey, user);
+        vm.stopPrank();
+
+        vm.expectRevert();
+        vm.prank(gasPayer);
+        merkleAirdrop.claim(user, 0, PROOF, v, r, s);
+    }
+
+    function testAirdropContractHasSufficientTokens() public view {
+        uint256 contractBalance = token.balanceOf(address(merkleAirdrop));
+        assert(contractBalance >= AMOUNT_TO_CLAIM);
+    }
+
+    function testCannotClaimWithAnotherUsersSignature() public {
+        address anotherUser = makeAddr("AnotherUser");
+        (uint8 v, bytes32 r, bytes32 s) = signMessage(userPrivateKey, anotherUser);
+
+        vm.expectRevert(MerkleAirdrop.MerkleAirdrop__InvalidSignature.selector);
+        vm.prank(gasPayer);
+        merkleAirdrop.claim(user, AMOUNT_TO_CLAIM, PROOF, v, r, s);
+    }
+
+    function testMerkleRootAndTokenAreCorrect() public view {
+        assertEq(merkleAirdrop.getMerkleRoot(), ROOT);
+        assertEq(address(merkleAirdrop.getAirdropToken()), address(token));
+    }
 }
